@@ -13,7 +13,6 @@ class MobileApi(object):
         self.mobile_api_url = '{}/api/mobile/v0.5/video_outlines/courses'.\
             format(self.url)
         self.sess = requests.Session()
-        self.log = logging.getLogger('mobile')
         self.videos = []
         self.course = ""
 
@@ -56,17 +55,8 @@ class MobileApi(object):
 
     def process_video_data(self, json_data):
         for video in json_data:
-            if video['summary']['video_url'] == "https://youtu.be/Q-rY8DIwYgg":
+            if "Q-rY8DIwYgg" in video['summary']['video_url']:
                 print "lol"
-            if video['summary']['size'] == 0:
-                if video['summary']['video_url'] != '':
-                    pass
-                    # self.log_and_print("\nMissing size: {}".format(video))
-            if video['summary']['transcripts'] == "{}":
-                pass
-                # print video
-                # self.log_and_print("\nMissing transcript: {}".format(video))
-
             self.check_transcript_url(video['summary']['transcripts']['en'], video)
 
     def check_transcript_url(self, transcript_url, video):
@@ -75,11 +65,10 @@ class MobileApi(object):
             location = ""
             for block in video['path']:
                 location = "{},{}".format(location, block['name'])
-            # print "{},No transcript,{}".format(location[1:], video['unit_url'])
+            self.log_and_print("{},{},No transcript,{}".format(self.course, location[1:], video['unit_url']))
 
     def get_course_data(self, course):
         course_url = self.mobile_api_url + "/" + course
-        self.log_and_print("\n"+"!"*40+course+"!"*40+"\n")
         response = self.sess.get(course_url)
         if response.status_code == 200:
             result = response.json()
@@ -125,9 +114,7 @@ def main():
 
     logging.basicConfig(
         filename=log_filename,
-        level=logging.DEBUG,
-        format='%(asctime)s %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S')
+        level=logging.ERROR)
 
     if not (args.course or args.courses):
         print "need courses"
