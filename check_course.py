@@ -1,20 +1,20 @@
 import argparse
 import getpass
 import requests
-import logging
 import os
 import time
 
 
 class MobileApi(object):
 
-    def __init__(self):
+    def __init__(self, output_filename):
         self.url = "https://courses.edx.org"
         self.mobile_api_url = '{}/api/mobile/v0.5/video_outlines/courses'.\
             format(self.url)
         self.sess = requests.Session()
         self.videos = []
         self.course = ""
+        self.f = open(output_filename, "ab")
 
     def get_csrf(self, url):
         """
@@ -52,6 +52,7 @@ class MobileApi(object):
                 self.process_video_data(thing[1])
             else:
                 print course.rstrip("\n") + ": "+str(thing[1])
+        self.f.close()
 
     def process_video_data(self, json_data):
         for video in json_data:
@@ -83,8 +84,7 @@ class MobileApi(object):
         Attributes:
             message (str): The message
         """
-
-        self.log.error(message)
+        self.f.write(message + "\n")
         print message
 
 
@@ -104,22 +104,27 @@ def main():
     parser.add_argument('-l', '--courses', type=argparse.FileType('rb'), default=None)
     parser.add_argument('-e', '--email', help='Studio email address', default='')
 
+    parser.usage = '''
+    How to use.
+    You need a course and email.
+
+    python -e email@email.com -c course/id/here
+
+    Check the 'course_check_output' for the csv file.
+    '''
     args = parser.parse_args()
 
-    log_folder = "course_check_log"
+    log_folder = "course_check_output"
+
+    if not (args.course or args.courses):
+        print parser.usage
+        return
 
     if not os.path.exists(log_folder):
         os.makedirs(log_folder)
-    log_filename = log_folder+"/"+tag_time()+".txt"
+    output_filename = log_folder+"/"+tag_time()+".txt"
 
-    logging.basicConfig(
-        filename=log_filename,
-        level=logging.ERROR)
-
-    if not (args.course or args.courses):
-        print "need courses"
-        return
-    mobile = MobileApi()
+    mobile = MobileApi(output_filename)
     email = args.email or raw_input('Email address: ')
     password = getpass.getpass('Password: ')
     mobile.login(email, password)
